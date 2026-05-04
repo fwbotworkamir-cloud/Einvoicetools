@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>UAE E-Invoice Pre-Flight Validator — Sky Sigma</title>
+<meta name="description" content="Free UAE PINT AE e-invoice validator. Bulk-upload invoices (XML, JSON, CSV) and get a pass/fail report against the 51/49 mandatory fields and 8 UAE-specific rules. Built by Sky Sigma." />
+<meta name="theme-color" content="#0b2545" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b2545'/%3E%3Ctext x='50%25' y='58%25' text-anchor='middle' fill='%2300b4d8' font-size='18' font-family='ui-sans-serif,system-ui' font-weight='700'%3ES%3C/text%3E%3C/svg%3E" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --navy:#0b2545; --navy-2:#13315c; --ink:#0f172a;
+    --cyan:#00b4d8; --cyan-2:#0ea5e9;
+    --bg:#f6f8fb; --card:#ffffff; --line:#e6ecf2;
+    --green:#16a34a; --green-bg:#dcfce7;
+    --amber:#d97706; --amber-bg:#fef3c7;
+    --red:#dc2626; --red-bg:#fee2e2;
+    --muted:#64748b;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5}
+  a{color:var(--navy)}
+  header{background:linear-gradient(120deg,var(--navy) 0%,var(--navy-2) 100%);color:#fff;padding:18px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.2px}
+  .brand .logo{width:32px;height:32px;border-radius:7px;background:#0b2545;display:flex;align-items:center;justify-content:center;color:var(--cyan);font-weight:800;border:1px solid rgba(255,255,255,.15)}
+  .brand .name{font-size:16px}
+  .brand .name span{color:var(--cyan)}
+  .nav{display:flex;gap:18px;align-items:center;font-size:14px;color:#dbe5f1}
+  .nav a{color:#dbe5f1;text-decoration:none}
+  .nav a:hover{color:#fff}
+  .planBadge{font-size:11px;background:#fef3c7;color:#7c2d12;padding:4px 8px;border-radius:6px;font-weight:700;letter-spacing:.4px;text-transform:uppercase}
+  .planBadge.pro{background:#dcfce7;color:#14532d}
+  main{max-width:1100px;margin:0 auto;padding:36px 24px 80px}
+  .hero{padding:8px 0 24px}
+  .pill{display:inline-block;background:#e0f2fe;color:#075985;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;margin-bottom:14px;letter-spacing:.3px;text-transform:uppercase}
+  h1{font-size:34px;margin:0 0 10px;color:var(--navy);line-height:1.15;letter-spacing:-.3px}
+  h1 span{color:var(--cyan-2)}
+  .sub{color:var(--muted);max-width:720px;font-size:16px}
+  .grid{display:grid;grid-template-columns:1fr;gap:24px;margin-top:28px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;box-shadow:0 1px 0 rgba(15,23,42,.02)}
+  .card h2{margin:0 0 4px;font-size:17px;color:var(--navy)}
+  .card .h-sub{color:var(--muted);font-size:13px;margin-bottom:14px}
+  .drop{border:2px dashed #b8c6d6;border-radius:12px;padding:28px;text-align:center;background:#fbfdff;transition:all .15s ease;cursor:pointer;display:block}
+  .drop.drag{border-color:var(--cyan);background:#eaf8fd}
+  .drop .ic{font-size:34px;color:var(--cyan-2);margin-bottom:8px}
+  .drop p{margin:6px 0;color:var(--ink)}
+  .drop .small{color:var(--muted);font-size:13px}
+  .drop input{display:none}
+  .btn{display:inline-flex;align-items:center;gap:8px;background:var(--navy);color:#fff;border:0;border-radius:8px;padding:10px 16px;font-weight:600;font-size:14px;cursor:pointer;text-decoration:none}
+  .btn:hover{background:#0a1f3a}
+  .btn-ghost{background:transparent;color:var(--navy);border:1px solid var(--line)}
+  .btn-ghost:hover{background:#eef2f7}
+  .btn-cyan{background:var(--cyan-2)}
+  .btn-cyan:hover{background:#0284c7}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;font-size:13px;color:var(--muted)}
+  .tag{background:#eef2f7;color:#334155;padding:3px 8px;border-radius:6px;font-size:12px}
+  .scoreRow{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+  @media (max-width:560px){.scoreRow{grid-template-columns:repeat(2,1fr)}}
+  .score{padding:14px;border-radius:10px;background:#f8fafc;border:1px solid var(--line)}
+  .score .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;font-weight:600}
+  .score .v{font-size:22px;font-weight:700;color:var(--ink);margin-top:4px}
+  .score.ok .v{color:var(--green)} .score.warn .v{color:var(--amber)} .score.err .v{color:var(--red)}
+  .verdict{padding:12px 14px;border-radius:10px;font-weight:600;display:flex;align-items:center;gap:10px;margin:6px 0 14px}
+  .verdict.ok{background:var(--green-bg);color:#14532d}
+  .verdict.warn{background:var(--amber-bg);color:#7c2d12}
+  .verdict.err{background:var(--red-bg);color:#7f1d1d}
+  .issues{display:flex;flex-direction:column;gap:8px}
+  .issue{border:1px solid var(--line);border-left:4px solid #e2e8f0;border-radius:8px;padding:12px 14px;background:#fbfcfe}
+  .issue.err{border-left-color:var(--red)}
+  .issue.warn{border-left-color:var(--amber)}
+  .issue.ok{border-left-color:var(--green)}
+  .issue .row1{display:flex;justify-content:space-between;gap:12px;align-items:baseline;margin-bottom:4px}
+  .issue .ttl{font-weight:600;color:var(--ink)}
+  .issue .badge{font-size:11px;padding:2px 7px;border-radius:6px;font-weight:700;letter-spacing:.3px;text-transform:uppercase}
+  .issue.err .badge{background:var(--red-bg);color:#7f1d1d}
+  .issue.warn .badge{background:var(--amber-bg);color:#7c2d12}
+  .issue.ok .badge{background:var(--green-bg);color:#14532d}
+  .issue .desc{color:var(--muted);font-size:13.5px;margin:0}
+  .issue code{background:#eef2f7;padding:1px 6px;border-radius:4px;font-size:12.5px;color:#0f172a}
+  details.rules{background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:14px}
+  details.rules summary{cursor:pointer;font-weight:600;color:var(--navy)}
+  details.rules ol{margin:8px 0 0 18px;color:#334155}
+  .footer{max-width:1100px;margin:0 auto;padding:30px 24px 60px;color:var(--muted);font-size:13px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px}
+  .footer .right a{margin-left:14px;color:var(--muted);text-decoration:none}
+  .footer .right a:hover{color:var(--navy)}
+  .placeholder{color:var(--muted);font-size:14px;text-align:center;padding:24px 8px}
+  .results-empty .ic{font-size:36px;color:#cbd5e1}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+  .pricing{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}
+  @media (max-width:760px){.pricing{grid-template-columns:1fr}}
+  .plan{border:1px solid var(--line);border-radius:12px;padding:16px;background:#fbfdff}
+  .plan.featured{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,180,216,.12)}
+  .plan h3{margin:0 0 4px;color:var(--navy)}
+  .plan .price{font-size:22px;font-weight:700;color:var(--ink);margin:6px 0}
+  .plan ul{margin:8px 0 0 18px;color:#334155;padding:0}
+  .plan li{margin:3px 0}
+  hr{border:0;border-top:1px solid var(--line);margin:32px 0}
+  .legal{font-size:12px;color:var(--muted);margin-top:12px}
+  .kbd{background:#eef2f7;border:1px solid var(--line);border-bottom-width:2px;padding:1px 6px;border-radius:4px;font-family:ui-monospace,Menlo,monospace;font-size:12px}
+  .batchSummary{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+  @media (max-width:760px){.batchSummary{grid-template-columns:repeat(2,1fr)}}
+  table.batch{width:100%;border-collapse:collapse;font-size:14px}
+  table.batch th{text-align:left;padding:10px 8px;font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);border-bottom:1px solid var(--line);font-weight:600}
+  table.batch td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+  table.batch tr.row{cursor:pointer;transition:background .1s}
+  table.batch tr.row:hover{background:#f8fafc}
+  table.batch tr.row.sel{background:#eaf8fd}
+  table.batch .v-pill{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:.3px;text-transform:uppercase}
+  table.batch .v-pill.ok{background:var(--green-bg);color:#14532d}
+  table.batch .v-pill.warn{background:var(--amber-bg);color:#7c2d12}
+  table.batch .v-pill.err{background:var(--red-bg);color:#7f1d1d}
+  .filename{font-weight:500;color:var(--ink);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+  .progress{background:#eef2f7;border-radius:6px;height:6px;overflow:hidden;margin:10px 0}
+  .progress > div{height:100%;background:var(--cyan-2);transition:width .2s}
+  .planSwitch{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);background:#fef3c7;border:1px solid #fde68a;padding:8px 12px;border-radius:8px;margin-top:14px}
+  .planSwitch.pro{background:#dcfce7;border-color:#86efac;color:#14532d}
+  .planSwitch button{font-size:12px;padding:4px 10px;background:var(--navy);color:#fff;border:0;border-radius:6px;cursor:pointer;font-weight:600}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo">S</div>
+    <div class="name">Sky <span>Sigma</span> · E-Invoice Tools</div>
+  </div>
+  <nav class="nav">
+    <a href="#validator">Validator</a>
+    <a href="#how">How it works</a>
+    <a href="#pricing">Plans</a>
+    <span id="planBadge" class="planBadge">Free trial</span>
+    <a href="https://sky-sigma.com" target="_blank" rel="noopener">Sky Sigma</a>
+  </nav>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="pill">UAE PINT AE · Phase 1 launches 1 Jan 2027</div>
+    <h1>Are your invoices <span>FTA-ready?</span></h1>
+    <p class="sub">Drop in <strong>one or hundreds</strong> of UAE invoices — XML, JSON, or CSV — and we'll check each against all <strong>51 mandatory fields</strong> for tax invoices (or 49 for commercial), plus the eight UAE-specific rules from the Ministry of Finance V1.0 guidelines. Free, instant, no signup.</p>
+  </section>
+
+  <section class="grid" id="validator">
+    <div class="card">
+      <h2>1. Upload invoices</h2>
+      <div class="h-sub">Bulk upload supported — XML, JSON, or CSV. Files never leave your browser.</div>
+
+      <label class="drop" id="drop">
+        <div class="ic">⤓</div>
+        <p><strong>Drop one or many invoices here</strong> or <u>click to browse</u></p>
+        <p class="small">Accepts <code>.xml</code>, <code>.json</code>, <code>.csv</code> · max 5 MB per file · up to 100 files at once on Free</p>
+        <input type="file" id="fileIn" accept=".xml,.json,.csv,.txt" multiple />
+      </label>
+
+      <div class="toolbar">
+        <button class="btn btn-ghost" id="loadSample">Load 3 sample invoices</button>
+        <button class="btn btn-ghost" id="resetBtn" style="display:none">Clear queue</button>
+      </div>
+
+      <div class="meta">
+        <span class="tag">Client-side only</span>
+        <span class="tag">No data uploaded</span>
+        <span class="tag">PINT AE V1.0 ruleset</span>
+        <span class="tag">Bulk · up to 100 files</span>
+      </div>
+
+      <div id="planSwitch" class="planSwitch">
+        <span>You're on the <strong>Free trial</strong>. PDF reports include a Sky Sigma watermark. Upgrade to remove it.</span>
+        <button id="togglePlan">Toggle Pro (demo)</button>
+      </div>
+
+      <details class="rules">
+        <summary>The 8 UAE-specific rules we check</summary>
+        <ol>
+          <li><strong>TIN format</strong> — Participant ID must be 10 digits, the first 10 of a valid TRN.</li>
+          <li><strong>Scheme code</strong> — Seller electronic identifier must be exactly <code>0235</code>.</li>
+          <li><strong>Transaction type code</strong> — 8-character flag string, only <code>0</code> or <code>1</code>.</li>
+          <li><strong>AED line amounts</strong> — fields 48 &amp; 49 required when invoice currency ≠ AED.</li>
+          <li><strong>Legal registration ID type</strong> — must be <code>TL</code>, <code>EID</code>, <code>PAS</code>, or <code>CD</code>.</li>
+          <li><strong>Specification Identifier</strong> — must match a published PINT AE value.</li>
+          <li><strong>Currency consistency</strong> — Total tax in accounting currency, line totals in invoice currency.</li>
+          <li><strong>Tax category math</strong> — taxable amount × rate must equal tax amount per category.</li>
+        </ol>
+      </details>
+    </div>
+
+    <div class="card" id="resultsCard">
+      <h2>2. Batch report</h2>
+      <div class="h-sub" id="resultsSub">Pass/fail breakdown across all files. Click a row for line-by-line issues.</div>
+      <div id="results">
+        <div class="placeholder results-empty">
+          <div class="ic">📄</div>
+          <p>Upload one or more invoices to see the report.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr/>
+
+  <section id="how">
+    <h2 style="color:var(--navy);margin-bottom:6px">How it works</h2>
+    <p style="color:var(--muted);max-width:760px;margin-top:0">Each file is parsed in your browser, identified as a Tax Invoice (51 fields) or a Commercial Invoice (49 fields), then run through two layers of checks: structural mandatory-field presence, and the eight UAE-specific rules from the MoF Guidelines V1.0. The PDF report bundles all files into a single audit document.</p>
+  </section>
+
+  <section id="pricing">
+    <h2 style="color:var(--navy);margin-bottom:6px">Plans</h2>
+    <p style="color:var(--muted);max-width:720px;margin-top:0">Free for individuals, paid for tax agents and ERP integrators.</p>
+    <div class="pricing">
+      <div class="plan">
+        <h3>Free trial</h3>
+        <div class="price">AED 0</div>
+        <p style="color:var(--muted);margin:0 0 6px">For SMEs and accountants spot-checking invoices.</p>
+        <ul>
+          <li>Up to 100 invoices / batch</li>
+          <li>All 51/49 field checks</li>
+          <li>All 8 UAE rules</li>
+          <li>PDF report <em>with Sky Sigma watermark</em></li>
+        </ul>
+      </div>
+      <div class="plan featured">
+        <h3>Tax Agent</h3>
+        <div class="price">AED 199<span style="font-size:13px;color:var(--muted)">/month</span></div>
+        <p style="color:var(--muted);margin:0 0 6px">For agents serving SME clients.</p>
+        <ul>
+          <li>Unlimited validations</li>
+          <li>White-label PDF — no watermark</li>
+          <li>Multi-client dashboard</li>
+          <li>Email support</li>
+        </ul>
+      </div>
+      <div class="plan">
+        <h3>API</h3>
+        <div class="price">From AED 0.05<span style="font-size:13px;color:var(--muted)">/call</span></div>
+        <p style="color:var(--muted);margin:0 0 6px">For ERP / ASP / accounting platform integrators.</p>
+        <ul>
+          <li>REST endpoint</li>
+          <li>Bulk validation</li>
+          <li>Webhook results</li>
+          <li>SLA &amp; support</li>
+        </ul>
+      </div>
+    </div>
+    <p class="legal">Sky Sigma is a UAE-based accounting firm. This validator is an independent compliance aid and is not affiliated with the UAE Ministry of Finance or the FTA. The official rules are the MoF Electronic Invoicing Guidelines V1.0 (23 Feb 2026). Always verify with your Accredited Service Provider before submission.</p>
+  </section>
+</main>
+
+<div class="footer">
+  <div>© <span id="yr"></span> Sky Sigma · UAE E-Invoice Pre-Flight Validator</div>
+  <div class="right">
+    <a href="https://mof.gov.ae" target="_blank" rel="noopener">MoF source</a>
+    <a href="#validator">Back to top</a>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   UAE PINT AE Pre-Flight Validator — Sky Sigma · v1.1 (bulk + PDF)
+   ============================================================ */
+
+const $ = (s) => document.querySelector(s);
+$('#yr').textContent = new Date().getFullYear();
+
+const drop = $('#drop'), fileIn = $('#fileIn'), out = $('#results'), resetBtn = $('#resetBtn'), planBadge = $('#planBadge'), planSwitch = $('#planSwitch');
+
+let BATCH = []; // [{name, ok, error, inv, result}]
+
+/* ---------------- Plan toggle (demo) ----------------- */
+function getPlan(){ return localStorage.getItem('skySigmaPlan') === 'pro' ? 'pro' : 'free'; }
+function setPlan(p){ localStorage.setItem('skySigmaPlan', p); refreshPlanUI(); }
+function refreshPlanUI(){
+  const p = getPlan();
+  if (p === 'pro'){
+    planBadge.textContent = 'Pro · No watermark';
+    planBadge.classList.add('pro');
+    planSwitch.classList.add('pro');
+    planSwitch.querySelector('span').innerHTML = "You're on <strong>Pro (demo)</strong>. Reports are clean, no watermark.";
+    planSwitch.querySelector('button').textContent = 'Switch to Free';
+  } else {
+    planBadge.textContent = 'Free trial';
+    planBadge.classList.remove('pro');
+    planSwitch.classList.remove('pro');
+    planSwitch.querySelector('span').innerHTML = "You're on the <strong>Free trial</strong>. PDF reports include a Sky Sigma watermark. Upgrade to remove it.";
+    planSwitch.querySelector('button').textContent = 'Toggle Pro (demo)';
+  }
+}
+$('#togglePlan').addEventListener('click', () => setPlan(getPlan() === 'pro' ? 'free' : 'pro'));
+refreshPlanUI();
+
+/* ---------------- Drop / pick ----------------- */
+['dragenter','dragover'].forEach(e => drop.addEventListener(e, ev => {ev.preventDefault(); drop.classList.add('drag');}));
+['dragleave','drop'].forEach(e => drop.addEventListener(e, ev => {ev.preventDefault(); drop.classList.remove('drag');}));
+drop.addEventListener('drop', ev => { handleFiles(Array.from(ev.dataTransfer.files)); });
+fileIn.addEventListener('change', e => { handleFiles(Array.from(e.target.files)); fileIn.value=''; });
+
+<script>
+/* UAE PINT AE Pre-Flight Validator — Sky Sigma · v0
+   Single-file validator. Defensive: every fetch wrapped, missing data renders "—".
+   Upgrade path: bulk upload + watermarked PDF + auto-fix in next iteration. */
+
+const $ = (s) => document.querySelector(s);
+const dash = (v) => (v === null || v === undefined || v === '') ? '—' : String(v);
+
+$('#yr').textContent = new Date().getFullYear();
+
+const drop = $('#drop'), fileIn = $('#fileIn'), out = $('#results'), resetBtn = $('#resetBtn'), planBadge = $('#planBadge'), planSwitch = $('#planSwitch');
+
+let BATCH = [];
+
+/* Plan toggle */
+function getPlan(){ return localStorage.getItem('skySigmaPlan') === 'pro' ? 'pro' : 'free'; }
+function setPlan(p){ localStorage.setItem('skySigmaPlan', p); refreshPlanUI(); }
+function refreshPlanUI(){
+  const p = getPlan();
+  if (p === 'pro'){
+    planBadge.textContent = 'Pro · No watermark';
+    planBadge.classList.add('pro');
+    planSwitch && planSwitch.classList.add('pro');
+  } else {
+    planBadge.textContent = 'Free trial';
+    planBadge.classList.remove('pro');
+    planSwitch && planSwitch.classList.remove('pro');
+  }
+}
+$('#togglePlan').addEventListener('click', () => setPlan(getPlan() === 'pro' ? 'free' : 'pro'));
+refreshPlanUI();
+
+['dragenter','dragover'].forEach(e => drop.addEventListener(e, ev => {ev.preventDefault(); drop.classList.add('drag');}));
+['dragleave','drop'].forEach(e => drop.addEventListener(e, ev => {ev.preventDefault(); drop.classList.remove('drag');}));
+drop.addEventListener('drop', ev => handleFiles(Array.from(ev.dataTransfer.files)));
+fileIn.addEventListener('change', e => { handleFiles(Array.from(e.target.files)); fileIn.value=''; });
+
+$('#loadSample').addEventListener('click', () => {
+  const sample = '<?xml version="1.0" encoding="UTF-8"?><Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"><cbc:CustomizationID>urn:peppol:pint:billing-1@ae-1</cbc:CustomizationID><cbc:ID>INV-2026-0042</cbc:ID><cbc:IssueDate>2026-07-15</cbc:IssueDate><cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode><cbc:Note>Transaction: 00000000</cbc:Note><cbc:DocumentCurrencyCode>AED</cbc:DocumentCurrencyCode><cac:AccountingSupplierParty><cac:Party><cbc:EndpointID schemeID="0235">1234567890</cbc:EndpointID><cac:PartyName><cbc:Name>Sky Sigma Accounting LLC</cbc:Name></cac:PartyName></cac:Party></cac:AccountingSupplierParty><cac:AccountingCustomerParty><cac:Party><cac:PartyName><cbc:Name>Acme Trading FZ-LLC</cbc:Name></cac:PartyName></cac:Party></cac:AccountingCustomerParty></Invoice>';
+  BATCH = [{name:'sample-clean.xml', text:sample}];
+  processBatch();
+});
+
+$('#resetBtn').addEventListener('click', () => {
+  BATCH = [];
+  out.innerHTML = '<div class="placeholder results-empty"><div class="ic">📄</div><p>Upload one or more invoices to see the report.</p></div>';
+  resetBtn.style.display = 'none';
+});
+
+function handleFiles(files){
+  if (!files.length) return;
+  if (files.length > 100) { alert('Free trial limit: 100 files. Upgrade for unlimited.'); files = files.slice(0,100); }
+  resetBtn.style.display = 'inline-flex';
+  let done = 0;
+  BATCH = [];
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      BATCH.push({name: file.name, text: reader.result});
+      if (++done === files.length) processBatch();
+    };
+    reader.onerror = () => { BATCH.push({name:file.name, error:'Could not read'}); if (++done === files.length) processBatch(); };
+    reader.readAsText(file);
+  });
+}
+
+function processBatch(){
+  BATCH = BATCH.map(b => {
+    if (b.error) return {...b, ok:false};
+    try { return {...b, ok:true, ...validate(b.text)}; }
+    catch(e){ return {...b, ok:false, error:e.message || 'Parse failed'}; }
+  });
+  renderBatch();
+}
+
+function validate(text){
+  const dom = new DOMParser().parseFromString(text, 'application/xml');
+  if (dom.getElementsByTagName('parsererror').length) throw new Error('Invalid XML');
+  const root = dom.documentElement;
+  const all = root.getElementsByTagName('*');
+  const find = (n) => { for (const el of all) if (el.localName === n) return el; return null; };
+  const findAll = (n) => { const r=[]; for (const el of all) if (el.localName === n) r.push(el); return r; };
+  const txt = (n) => { const e = find(n); return e ? e.textContent.trim() : ''; };
+
+  const issues = [];
+  const add = (sev, fno, field, msg, hint) => issues.push({sev, fno, field, msg, hint:hint||''});
+
+  if (!txt('ID')) add('err', 1, 'Invoice number', 'Missing');
+  const issueDate = txt('IssueDate');
+  if (!issueDate) add('err', 2, 'Invoice date', 'Missing');
+  else if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(issueDate)) add('warn', 2, 'Invoice date', 'Format YYYY-MM-DD expected', 'Got: ' + issueDate);
+  if (!txt('InvoiceTypeCode')) add('err', 3, 'Invoice type code', 'Missing');
+  const ccy = txt('DocumentCurrencyCode');
+  if (!ccy) add('err', 4, 'Invoice currency', 'Missing');
+
+  const ttMatch = (text || '').match(/[\s>][01]{8}[\s<]/);
+  if (!ttMatch) add('err', 5, 'Transaction type code', 'Missing 8-bit flag', 'Required UAE-specific field, e.g. 00000000');
+
+  const cust = txt('CustomizationID');
+  if (!cust) add('err', 8, 'Specification Identifier', 'Missing');
+  else if (!/pint.?ae/i.test(cust)) add('warn', 8, 'Specification Identifier', 'Does not look like PINT AE', 'Got: ' + cust);
+
+  const supParty = find('AccountingSupplierParty');
+  if (!supParty) add('err', 10, 'Seller party', 'Missing');
+  else {
+    const ep = supParty.getElementsByTagName('*');
+    let endpoint = null, scheme = '', sellerName = '', country = '', taxID = '', legalScheme = '';
+    for (const el of ep) {
+      if (el.localName === 'EndpointID' && !endpoint) { endpoint = el.textContent.trim(); scheme = el.getAttribute('schemeID') || ''; }
+      if (el.localName === 'RegistrationName' && !sellerName) sellerName = el.textContent.trim();
+      if (el.localName === 'IdentificationCode' && !country) country = el.textContent.trim();
+    }
+    const taxScheme = supParty.getElementsByTagName('*');
+    for (const el of taxScheme) {
+      if (el.parentElement && el.parentElement.localName === 'PartyTaxScheme' && el.localName === 'CompanyID') taxID = el.textContent.trim();
+      if (el.localName === 'CompanyID' && el.parentElement && el.parentElement.localName === 'PartyLegalEntity') legalScheme = el.getAttribute('schemeID') || '';
+    }
+    if (!sellerName) add('err', 10, 'Seller name', 'Missing');
+    if (!endpoint) add('err', 11, 'Seller TIN (EndpointID)', 'Missing');
+    else if (!/^[0-9]{10}$/.test(endpoint)) add('err', 11, 'Seller TIN', 'TIN must be 10 digits, the first 10 of TRN', 'Got: ' + endpoint);
+    if (!scheme) add('warn', 12, 'Seller scheme code', 'Missing schemeID attribute', 'Must be 0235 for UAE entities');
+    else if (scheme !== '0235') add('err', 12, 'Seller scheme code', 'Must be 0235', 'Got: ' + scheme);
+    if (taxID && !/^[0-9]{15}$/.test(taxID)) add('warn', 15, 'Seller TRN', 'UAE TRNs are 15 digits', 'Got: ' + taxID);
+    if (legalScheme && !['TL','EID','PAS','CD'].includes(legalScheme.toUpperCase())) add('err', 14, 'Seller legal reg type', 'Must be TL, EID, PAS, or CD', 'Got: ' + legalScheme);
+    if (country && country !== 'AE') add('warn', 20, 'Seller country', 'Expected AE');
+  }
+
+  const cusParty = find('AccountingCustomerParty');
+  if (!cusParty) add('err', 21, 'Buyer party', 'Missing');
+  else {
+    let buyerName = '';
+    for (const el of cusParty.getElementsByTagName('*')) {
+      if (el.localName === 'RegistrationName' || (el.localName === 'Name' && el.parentElement.localName === 'PartyName')) { buyerName = el.textContent.trim(); break; }
+    }
+    if (!buyerName) add('err', 21, 'Buyer name', 'Missing');
+  }
+
+  const totals = find('LegalMonetaryTotal');
+  if (!totals) add('err', 30, 'Document totals', 'Missing LegalMonetaryTotal block');
+
+  const taxBreakdowns = findAll('TaxSubtotal');
+  if (!taxBreakdowns.length) add('warn', 35, 'Tax breakdown', 'No TaxSubtotal found');
+  taxBreakdowns.forEach((sub, i) => {
+    const tax = sub.getElementsByTagName('*');
+    let taxable=null, taxAmt=null, rate=null;
+    for (const el of tax) {
+      if (el.localName === 'TaxableAmount') taxable = parseFloat(el.textContent);
+      else if (el.localName === 'TaxAmount' && taxAmt === null) taxAmt = parseFloat(el.textContent);
+      else if (el.localName === 'Percent') rate = parseFloat(el.textContent);
+    }
+    if (taxable !== null && taxAmt !== null && rate !== null && !isNaN(rate)) {
+      const expected = +(taxable * rate / 100).toFixed(2);
+      if (Math.abs(expected - taxAmt) > 0.05) add('err', 36, 'Tax category math (subtotal ' + (i+1) + ')', 'Tax does not reconcile', 'Expected ' + expected + ', got ' + taxAmt);
+    }
+  });
+
+  if (ccy && ccy !== 'AED') {
+    const hasAED = /currencyID="AED"/.test(text || '');
+    if (!hasAED) add('err', 48, 'AED line amounts', 'Foreign-currency tax invoices must include VAT/Invoice line amounts in AED');
+  }
+
+  const errs = issues.filter(i => i.sev === 'err').length;
+  const warns = issues.filter(i => i.sev === 'warn').length;
+  const verdict = errs > 0 ? 'err' : (warns > 0 ? 'warn' : 'ok');
+  const isCommercial = !taxBreakdowns.length;
+  const fieldCount = isCommercial ? 49 : 51;
+  const present = Math.max(0, fieldCount - errs);
+  return { issues, verdict, errs, warns, present, fieldCount, type: isCommercial ? 'Commercial Invoice' : 'Tax Invoice' };
+}
+
+function esc(s){ return (s||'').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function renderBatch(){
+  if (!BATCH.length) { out.innerHTML = '<div class="placeholder results-empty"><div class="ic">📄</div><p>Upload to see the report.</p></div>'; return; }
+  const total = BATCH.length;
+  const ok = BATCH.filter(b => b.ok && b.verdict === 'ok').length;
+  const warn = BATCH.filter(b => b.ok && b.verdict === 'warn').length;
+  const err = BATCH.filter(b => !b.ok || b.verdict === 'err').length;
+  const passRate = Math.round(ok/total*100);
+
+  let summary = '<div class="batchSummary">';
+  summary += '<div class="score"><div class="k">Files</div><div class="v">'+total+'</div></div>';
+  summary += '<div class="score ok"><div class="k">Passed</div><div class="v">'+ok+'</div></div>';
+  summary += '<div class="score '+(warn?'warn':'ok')+'"><div class="k">Warnings</div><div class="v">'+warn+'</div></div>';
+  summary += '<div class="score '+(err?'err':'ok')+'"><div class="k">Failed</div><div class="v">'+err+'</div></div>';
+  summary += '<div class="score '+(passRate===100?'ok':passRate>=70?'warn':'err')+'"><div class="k">Pass rate</div><div class="v">'+passRate+'%</div></div>';
+  summary += '</div>';
+
+  let body = '';
+  BATCH.forEach((b, i) => {
+    body += '<div class="card" style="margin-top:14px">';
+    body += '<h3 style="margin:0 0 6px;color:var(--navy);font-size:15px">'+esc(b.name)+'</h3>';
+    if (!b.ok) {
+      body += '<div class="verdict err">Could not parse: '+esc(b.error || 'unknown')+'</div></div>';
+      return;
+    }
+    const v = b.verdict;
+    const vTxt = v==='ok'?'PASS — looks FTA-ready':v==='warn'?'PASS with warnings':'FAIL — must fix';
+    body += '<div class="verdict '+v+'">'+vTxt+' · '+b.errs+' error'+(b.errs===1?'':'s')+', '+b.warns+' warning'+(b.warns===1?'':'s')+' · Fields '+b.present+'/'+b.fieldCount+'</div>';
+    if (b.issues.length) {
+      body += '<div class="issues">';
+      b.issues.forEach(it => {
+        body += '<div class="issue '+it.sev+'"><div class="row1"><div class="ttl">'+(it.fno?'#'+it.fno+' · ':'')+esc(it.field)+'</div><div class="badge">'+(it.sev==='err'?'Error':'Warning')+'</div></div>';
+        body += '<p class="desc"><strong>'+esc(it.msg)+'.</strong> '+esc(it.hint)+'</p></div>';
+      });
+      body += '</div>';
+    }
+    body += '</div>';
+  });
+
+  body += '<div class="toolbar" style="margin-top:14px"><button class="btn btn-ghost" onclick="downloadCSV()">Download CSV summary</button> <a class="btn btn-ghost" href="https://mof.gov.ae/wp-content/uploads/2026/02/UAE-Electronic-Invoice-mandatory-fields_V-1.0-23Feb2026.pdf" target="_blank" rel="noopener">Open MoF V1.0 spec</a></div>';
+
+  out.innerHTML = summary + body;
+}
+
+window.downloadCSV = function(){
+  if (!BATCH.length) return;
+  const rows = [['File','Type','Verdict','Errors','Warnings','Fields']];
+  BATCH.forEach(b => {
+    if (!b.ok) rows.push([b.name, '-', 'PARSE_ERROR', 1, 0, '-']);
+    else rows.push([b.name, b.type, b.verdict.toUpperCase(), b.errs, b.warns, b.present+'/'+b.fieldCount]);
+  });
+  const csv = rows.map(r => r.map(c => '"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'einvoice-audit.csv';
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+};
+</script>
+
+</body>
+</html>
