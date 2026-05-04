@@ -6,8 +6,9 @@
 <title>UAE E-Invoice Pre-Flight Validator — Sky Sigma</title>
 <meta name="description" content="Free UAE PINT AE e-invoice validator. Bulk-upload invoices (XML, JSON, CSV) and get a pass/fail report against the 51/49 mandatory fields and 8 UAE-specific rules. Built by Sky Sigma." />
 <meta name="theme-color" content="#0b2545" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b2545'/%3E%3Ctext x='50%25' y='58%25' text-anchor='middle' fill='%2300b4d8' font-size='18' font-family='ui-sans-serif,system-ui' font-weight='700'%3ES%3C/text%3E%3C/svg%3E" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-2YoVogZjLBdsh4D2+wAqEzVWEMkVnP1IcRRmiwMvSGaXtaQz8tbn8FLfvXm9KxIYqCFgUtxYbnGsSvldlZ9iJg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <style>
   :root{
     --navy:#0b2545; --navy-2:#13315c; --ink:#0f172a;
@@ -98,22 +99,12 @@
   .plan li{margin:3px 0}
   hr{border:0;border-top:1px solid var(--line);margin:32px 0}
   .legal{font-size:12px;color:var(--muted);margin-top:12px}
-  .kbd{background:#eef2f7;border:1px solid var(--line);border-bottom-width:2px;padding:1px 6px;border-radius:4px;font-family:ui-monospace,Menlo,monospace;font-size:12px}
   .batchSummary{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
   @media (max-width:760px){.batchSummary{grid-template-columns:repeat(2,1fr)}}
   table.batch{width:100%;border-collapse:collapse;font-size:14px}
   table.batch th{text-align:left;padding:10px 8px;font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);border-bottom:1px solid var(--line);font-weight:600}
   table.batch td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
-  table.batch tr.row{cursor:pointer;transition:background .1s}
-  table.batch tr.row:hover{background:#f8fafc}
-  table.batch tr.row.sel{background:#eaf8fd}
-  table.batch .v-pill{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:.3px;text-transform:uppercase}
-  table.batch .v-pill.ok{background:var(--green-bg);color:#14532d}
-  table.batch .v-pill.warn{background:var(--amber-bg);color:#7c2d12}
-  table.batch .v-pill.err{background:var(--red-bg);color:#7f1d1d}
   .filename{font-weight:500;color:var(--ink);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
-  .progress{background:#eef2f7;border-radius:6px;height:6px;overflow:hidden;margin:10px 0}
-  .progress > div{height:100%;background:var(--cyan-2);transition:width .2s}
   .planSwitch{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);background:#fef3c7;border:1px solid #fde68a;padding:8px 12px;border-radius:8px;margin-top:14px}
   .planSwitch.pro{background:#dcfce7;border-color:#86efac;color:#14532d}
   .planSwitch button{font-size:12px;padding:4px 10px;background:var(--navy);color:#fff;border:0;border-radius:6px;cursor:pointer;font-weight:600}
@@ -155,7 +146,7 @@
       </label>
 
       <div class="toolbar">
-        <button class="btn btn-ghost" id="loadSample">Load 3 sample invoices</button>
+        <button class="btn btn-ghost" id="loadSample">Load sample invoice</button>
         <button class="btn btn-ghost" id="resetBtn" style="display:none">Clear queue</button>
       </div>
 
@@ -167,7 +158,7 @@
       </div>
 
       <div id="planSwitch" class="planSwitch">
-        <span>You're on the <strong>Free trial</strong>. PDF reports include a Sky Sigma watermark. Upgrade to remove it.</span>
+        <span>You're on the <strong>Free trial</strong>. Upgrade for white-label PDF reports.</span>
         <button id="togglePlan">Toggle Pro (demo)</button>
       </div>
 
@@ -188,7 +179,7 @@
 
     <div class="card" id="resultsCard">
       <h2>2. Batch report</h2>
-      <div class="h-sub" id="resultsSub">Pass/fail breakdown across all files. Click a row for line-by-line issues.</div>
+      <div class="h-sub">Pass/fail breakdown across all files. Click a row for line-by-line issues.</div>
       <div id="results">
         <div class="placeholder results-empty">
           <div class="ic">📄</div>
@@ -202,7 +193,7 @@
 
   <section id="how">
     <h2 style="color:var(--navy);margin-bottom:6px">How it works</h2>
-    <p style="color:var(--muted);max-width:760px;margin-top:0">Each file is parsed in your browser, identified as a Tax Invoice (51 fields) or a Commercial Invoice (49 fields), then run through two layers of checks: structural mandatory-field presence, and the eight UAE-specific rules from the MoF Guidelines V1.0. The PDF report bundles all files into a single audit document.</p>
+    <p style="color:var(--muted);max-width:760px;margin-top:0">Each file is parsed in your browser, identified as a Tax Invoice (51 fields) or a Commercial Invoice (49 fields), then run through two layers of checks: structural mandatory-field presence, and the eight UAE-specific rules from the MoF Guidelines V1.0.</p>
   </section>
 
   <section id="pricing">
@@ -217,7 +208,7 @@
           <li>Up to 100 invoices / batch</li>
           <li>All 51/49 field checks</li>
           <li>All 8 UAE rules</li>
-          <li>PDF report <em>with Sky Sigma watermark</em></li>
+          <li>CSV export</li>
         </ul>
       </div>
       <div class="plan featured">
@@ -226,7 +217,7 @@
         <p style="color:var(--muted);margin:0 0 6px">For agents serving SME clients.</p>
         <ul>
           <li>Unlimited validations</li>
-          <li>White-label PDF — no watermark</li>
+          <li>White-label PDF (server-side)</li>
           <li>Multi-client dashboard</li>
           <li>Email support</li>
         </ul>
@@ -256,50 +247,12 @@
 </div>
 
 <script>
-/* ============================================================
-   UAE PINT AE Pre-Flight Validator — Sky Sigma · v1.1 (bulk + PDF)
-   ============================================================ */
+/* UAE PINT AE Pre-Flight Validator — Sky Sigma · v0.1
+   Single-file client-side validator. v0.1 fix: removed duplicate <script> block.
+   Coding principles: simplicity, surgical, defensive.
+   Upgrade path: server-side PDF + auto-fix + Schematron in next iteration. */
 
-const $ = (s) => document.querySelector(s);
-$('#yr').textContent = new Date().getFullYear();
-
-const drop = $('#drop'), fileIn = $('#fileIn'), out = $('#results'), resetBtn = $('#resetBtn'), planBadge = $('#planBadge'), planSwitch = $('#planSwitch');
-
-let BATCH = []; // [{name, ok, error, inv, result}]
-
-/* ---------------- Plan toggle (demo) ----------------- */
-function getPlan(){ return localStorage.getItem('skySigmaPlan') === 'pro' ? 'pro' : 'free'; }
-function setPlan(p){ localStorage.setItem('skySigmaPlan', p); refreshPlanUI(); }
-function refreshPlanUI(){
-  const p = getPlan();
-  if (p === 'pro'){
-    planBadge.textContent = 'Pro · No watermark';
-    planBadge.classList.add('pro');
-    planSwitch.classList.add('pro');
-    planSwitch.querySelector('span').innerHTML = "You're on <strong>Pro (demo)</strong>. Reports are clean, no watermark.";
-    planSwitch.querySelector('button').textContent = 'Switch to Free';
-  } else {
-    planBadge.textContent = 'Free trial';
-    planBadge.classList.remove('pro');
-    planSwitch.classList.remove('pro');
-    planSwitch.querySelector('span').innerHTML = "You're on the <strong>Free trial</strong>. PDF reports include a Sky Sigma watermark. Upgrade to remove it.";
-    planSwitch.querySelector('button').textContent = 'Toggle Pro (demo)';
-  }
-}
-$('#togglePlan').addEventListener('click', () => setPlan(getPlan() === 'pro' ? 'free' : 'pro'));
-refreshPlanUI();
-
-/* ---------------- Drop / pick ----------------- */
-['dragenter','dragover'].forEach(e => drop.addEventListener(e, ev => {ev.preventDefault(); drop.classList.add('drag');}));
-['dragleave','drop'].forEach(e => drop.addEventListener(e, ev => {ev.preventDefault(); drop.classList.remove('drag');}));
-drop.addEventListener('drop', ev => { handleFiles(Array.from(ev.dataTransfer.files)); });
-fileIn.addEventListener('change', e => { handleFiles(Array.from(e.target.files)); fileIn.value=''; });
-
-<script>
-/* UAE PINT AE Pre-Flight Validator — Sky Sigma · v0
-   Single-file validator. Defensive: every fetch wrapped, missing data renders "—".
-   Upgrade path: bulk upload + watermarked PDF + auto-fix in next iteration. */
-
+(() => {
 const $ = (s) => document.querySelector(s);
 const dash = (v) => (v === null || v === undefined || v === '') ? '—' : String(v);
 
@@ -309,13 +262,12 @@ const drop = $('#drop'), fileIn = $('#fileIn'), out = $('#results'), resetBtn = 
 
 let BATCH = [];
 
-/* Plan toggle */
 function getPlan(){ return localStorage.getItem('skySigmaPlan') === 'pro' ? 'pro' : 'free'; }
 function setPlan(p){ localStorage.setItem('skySigmaPlan', p); refreshPlanUI(); }
 function refreshPlanUI(){
   const p = getPlan();
   if (p === 'pro'){
-    planBadge.textContent = 'Pro · No watermark';
+    planBadge.textContent = 'Pro (demo)';
     planBadge.classList.add('pro');
     planSwitch && planSwitch.classList.add('pro');
   } else {
@@ -333,7 +285,7 @@ drop.addEventListener('drop', ev => handleFiles(Array.from(ev.dataTransfer.files
 fileIn.addEventListener('change', e => { handleFiles(Array.from(e.target.files)); fileIn.value=''; });
 
 $('#loadSample').addEventListener('click', () => {
-  const sample = '<?xml version="1.0" encoding="UTF-8"?><Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"><cbc:CustomizationID>urn:peppol:pint:billing-1@ae-1</cbc:CustomizationID><cbc:ID>INV-2026-0042</cbc:ID><cbc:IssueDate>2026-07-15</cbc:IssueDate><cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode><cbc:Note>Transaction: 00000000</cbc:Note><cbc:DocumentCurrencyCode>AED</cbc:DocumentCurrencyCode><cac:AccountingSupplierParty><cac:Party><cbc:EndpointID schemeID="0235">1234567890</cbc:EndpointID><cac:PartyName><cbc:Name>Sky Sigma Accounting LLC</cbc:Name></cac:PartyName></cac:Party></cac:AccountingSupplierParty><cac:AccountingCustomerParty><cac:Party><cac:PartyName><cbc:Name>Acme Trading FZ-LLC</cbc:Name></cac:PartyName></cac:Party></cac:AccountingCustomerParty></Invoice>';
+  const sample = '<?xml version="1.0" encoding="UTF-8"?><Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"><cbc:CustomizationID>urn:peppol:pint:billing-1@ae-1</cbc:CustomizationID><cbc:ID>INV-2026-0042</cbc:ID><cbc:IssueDate>2026-07-15</cbc:IssueDate><cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode><cbc:Note>Transaction: 00000000</cbc:Note><cbc:DocumentCurrencyCode>AED</cbc:DocumentCurrencyCode><cac:AccountingSupplierParty><cac:Party><cbc:EndpointID schemeID="0235">1234567890</cbc:EndpointID><cac:PartyName><cbc:Name>Sky Sigma Accounting LLC</cbc:Name></cac:PartyName><cac:PartyLegalEntity><cbc:RegistrationName>Sky Sigma Accounting LLC</cbc:RegistrationName><cbc:CompanyID schemeID="TL">CN-1099887</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingSupplierParty><cac:AccountingCustomerParty><cac:Party><cac:PartyName><cbc:Name>Acme Trading FZ-LLC</cbc:Name></cac:PartyName></cac:Party></cac:AccountingCustomerParty><cac:LegalMonetaryTotal><cbc:LineExtensionAmount currencyID="AED">1000.00</cbc:LineExtensionAmount><cbc:TaxInclusiveAmount currencyID="AED">1050.00</cbc:TaxInclusiveAmount><cbc:PayableAmount currencyID="AED">1050.00</cbc:PayableAmount></cac:LegalMonetaryTotal></Invoice>';
   BATCH = [{name:'sample-clean.xml', text:sample}];
   processBatch();
 });
@@ -363,9 +315,9 @@ function handleFiles(files){
 
 function processBatch(){
   BATCH = BATCH.map(b => {
-    if (b.error) return {...b, ok:false};
-    try { return {...b, ok:true, ...validate(b.text)}; }
-    catch(e){ return {...b, ok:false, error:e.message || 'Parse failed'}; }
+    if (b.error) return Object.assign({}, b, {ok:false});
+    try { return Object.assign({}, b, {ok:true}, validate(b.text)); }
+    catch(e){ return Object.assign({}, b, {ok:false, error:e.message || 'Parse failed'}); }
   });
   renderBatch();
 }
@@ -390,8 +342,18 @@ function validate(text){
   const ccy = txt('DocumentCurrencyCode');
   if (!ccy) add('err', 4, 'Invoice currency', 'Missing');
 
-  const ttMatch = (text || '').match(/[\s>][01]{8}[\s<]/);
-  if (!ttMatch) add('err', 5, 'Transaction type code', 'Missing 8-bit flag', 'Required UAE-specific field, e.g. 00000000');
+  // Transaction type code: prefer Note element value, fall back to whole-doc regex
+  const noteEls = findAll('Note');
+  let tt = null;
+  for (const ne of noteEls) {
+    const m = ne.textContent.match(/[01]{8}/);
+    if (m) { tt = m[0]; break; }
+  }
+  if (!tt) {
+    const m = (text || '').match(/>[01]{8}</);
+    if (m) tt = m[0].slice(1, -1);
+  }
+  if (!tt) add('err', 5, 'Transaction type code', 'Missing 8-bit flag', 'Required UAE-specific field, e.g. 00000000');
 
   const cust = txt('CustomizationID');
   if (!cust) add('err', 8, 'Specification Identifier', 'Missing');
@@ -400,17 +362,13 @@ function validate(text){
   const supParty = find('AccountingSupplierParty');
   if (!supParty) add('err', 10, 'Seller party', 'Missing');
   else {
-    const ep = supParty.getElementsByTagName('*');
     let endpoint = null, scheme = '', sellerName = '', country = '', taxID = '', legalScheme = '';
-    for (const el of ep) {
+    for (const el of supParty.getElementsByTagName('*')) {
       if (el.localName === 'EndpointID' && !endpoint) { endpoint = el.textContent.trim(); scheme = el.getAttribute('schemeID') || ''; }
       if (el.localName === 'RegistrationName' && !sellerName) sellerName = el.textContent.trim();
       if (el.localName === 'IdentificationCode' && !country) country = el.textContent.trim();
-    }
-    const taxScheme = supParty.getElementsByTagName('*');
-    for (const el of taxScheme) {
-      if (el.parentElement && el.parentElement.localName === 'PartyTaxScheme' && el.localName === 'CompanyID') taxID = el.textContent.trim();
-      if (el.localName === 'CompanyID' && el.parentElement && el.parentElement.localName === 'PartyLegalEntity') legalScheme = el.getAttribute('schemeID') || '';
+      if (el.localName === 'CompanyID' && el.parentElement && el.parentElement.localName === 'PartyTaxScheme' && !taxID) taxID = el.textContent.trim();
+      if (el.localName === 'CompanyID' && el.parentElement && el.parentElement.localName === 'PartyLegalEntity' && !legalScheme) legalScheme = el.getAttribute('schemeID') || '';
     }
     if (!sellerName) add('err', 10, 'Seller name', 'Missing');
     if (!endpoint) add('err', 11, 'Seller TIN (EndpointID)', 'Missing');
@@ -427,7 +385,7 @@ function validate(text){
   else {
     let buyerName = '';
     for (const el of cusParty.getElementsByTagName('*')) {
-      if (el.localName === 'RegistrationName' || (el.localName === 'Name' && el.parentElement.localName === 'PartyName')) { buyerName = el.textContent.trim(); break; }
+      if (el.localName === 'RegistrationName' || (el.localName === 'Name' && el.parentElement && el.parentElement.localName === 'PartyName')) { buyerName = el.textContent.trim(); break; }
     }
     if (!buyerName) add('err', 21, 'Buyer name', 'Missing');
   }
@@ -438,12 +396,11 @@ function validate(text){
   const taxBreakdowns = findAll('TaxSubtotal');
   if (!taxBreakdowns.length) add('warn', 35, 'Tax breakdown', 'No TaxSubtotal found');
   taxBreakdowns.forEach((sub, i) => {
-    const tax = sub.getElementsByTagName('*');
     let taxable=null, taxAmt=null, rate=null;
-    for (const el of tax) {
-      if (el.localName === 'TaxableAmount') taxable = parseFloat(el.textContent);
+    for (const el of sub.getElementsByTagName('*')) {
+      if (el.localName === 'TaxableAmount' && taxable === null) taxable = parseFloat(el.textContent);
       else if (el.localName === 'TaxAmount' && taxAmt === null) taxAmt = parseFloat(el.textContent);
-      else if (el.localName === 'Percent') rate = parseFloat(el.textContent);
+      else if (el.localName === 'Percent' && rate === null) rate = parseFloat(el.textContent);
     }
     if (taxable !== null && taxAmt !== null && rate !== null && !isNaN(rate)) {
       const expected = +(taxable * rate / 100).toFixed(2);
@@ -484,7 +441,7 @@ function renderBatch(){
   summary += '</div>';
 
   let body = '';
-  BATCH.forEach((b, i) => {
+  BATCH.forEach((b) => {
     body += '<div class="card" style="margin-top:14px">';
     body += '<h3 style="margin:0 0 6px;color:var(--navy);font-size:15px">'+esc(b.name)+'</h3>';
     if (!b.ok) {
@@ -505,12 +462,14 @@ function renderBatch(){
     body += '</div>';
   });
 
-  body += '<div class="toolbar" style="margin-top:14px"><button class="btn btn-ghost" onclick="downloadCSV()">Download CSV summary</button> <a class="btn btn-ghost" href="https://mof.gov.ae/wp-content/uploads/2026/02/UAE-Electronic-Invoice-mandatory-fields_V-1.0-23Feb2026.pdf" target="_blank" rel="noopener">Open MoF V1.0 spec</a></div>';
+  body += '<div class="toolbar" style="margin-top:14px"><button class="btn btn-ghost" id="csvBtn">Download CSV summary</button> <a class="btn btn-ghost" href="https://mof.gov.ae/wp-content/uploads/2026/02/UAE-Electronic-Invoice-mandatory-fields_V-1.0-23Feb2026.pdf" target="_blank" rel="noopener">Open MoF V1.0 spec</a></div>';
 
   out.innerHTML = summary + body;
+  const csvBtn = document.getElementById('csvBtn');
+  if (csvBtn) csvBtn.addEventListener('click', downloadCSV);
 }
 
-window.downloadCSV = function(){
+function downloadCSV(){
   if (!BATCH.length) return;
   const rows = [['File','Type','Verdict','Errors','Warnings','Fields']];
   BATCH.forEach(b => {
@@ -523,7 +482,9 @@ window.downloadCSV = function(){
   a.href = URL.createObjectURL(blob); a.download = 'einvoice-audit.csv';
   document.body.appendChild(a); a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
-};
+}
+
+})();
 </script>
 
 </body>
